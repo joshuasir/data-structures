@@ -53,38 +53,35 @@ void rotate(node *curr, const char *flag) {
 	curr->parent = y;
 	}
 void fixViolation(node *curr) {
-
-		node *grandparent = NULL;
-		node *parent = NULL;
-		while ((curr->parent) && (curr->color != BLACK) && (curr->parent->color == RED)){ 
-		
-			parent = curr->parent;
-			grandparent = parent->parent;
-			node *uncle = (parent == grandparent->right) ? grandparent->left : grandparent->right;
-			
-			if(uncle && uncle->color == RED) {
-				uncle->color = parent->color = BLACK;
-				grandparent->color = RED;
-				curr = grandparent;
-			} else {
-				if(grandparent->right == parent ) {
-					if(parent->left == curr){
-						rotate(parent,"right");
-						curr = parent;
-						parent = curr->parent;
-					}
-					rotate(grandparent,"left");
-				} else if(grandparent->left == parent) {
-					if(parent->right == curr){
-						rotate(parent,"left");
-						curr = parent;
-						parent = curr->parent;	
-					}
-					rotate(grandparent,"right");
+	node *grandparent = NULL;
+	node *parent = NULL;
+	while ((curr->parent) && (curr->color != BLACK) && (curr->parent->color == RED)){ 
+		parent = curr->parent;
+		grandparent = parent->parent;
+		node *uncle = (parent == grandparent->right) ? grandparent->left : grandparent->right;
+		if(uncle && uncle->color == RED) {
+			uncle->color = parent->color = BLACK;
+			grandparent->color = RED;
+			curr = grandparent;
+		} else {
+			if(grandparent->right == parent ) {
+				if(parent->left == curr){
+					rotate(parent,"right");
+					curr = parent;
+					parent = curr->parent;
 				}
-				swapColor(parent,grandparent);
-				curr = parent;
+				rotate(grandparent,"left");
+			} else if(grandparent->left == parent) {
+				if(parent->right == curr){
+					rotate(parent,"left");
+					curr = parent;
+					parent = curr->parent;	
+				}
+				rotate(grandparent,"right");
 			}
+			swapColor(parent,grandparent);
+			curr = parent;
+		}
 	}
 	root->color = BLACK;
 }
