@@ -24,19 +24,20 @@ void swapColor(node *a,node *b) {
 
 void rotate(node *curr, const char *flag) {
 	node *y,*z;
+	
 	if(!strcmp(flag,"left")) {
 		
 		y = curr->right;
-    	z = y->left;
-    	curr->right = z;
+		z = y->left;
+    	curr->right = y->left;
     	y->left = curr;
 
 	} else if(!strcmp(flag,"right")) {
 		
 		y = curr->left;
-    	z = y->right;
+		z = y->right;
+    	curr->left = y->right;
     	y->right = curr;
-    	curr->left = z;
     	
 	}
 	if(!curr->parent){
@@ -51,7 +52,7 @@ void rotate(node *curr, const char *flag) {
 	}
 	y->parent = curr->parent;
 	curr->parent = y;
-	}
+}
 void fixViolation(node *curr) {
 	node *grandparent = NULL;
 	node *parent = NULL;
@@ -113,15 +114,15 @@ void inorder(node *curr,int depth){
 	inorder(curr->right,depth+1);}
 }
 void doubleBlack(node *curr){
-	if(curr == root){
+	if(curr == root){ 
 		return;
 	}
 	
-	node *parent = curr->parent,*sibling = (curr->parent->left == curr) ? curr->parent->right : curr->parent->left;
-	if(sibling == NULL){
+	node *parent = curr->parent,*sibling = (curr->parent->left == curr) ? curr->parent->right : curr->parent->left; 
+	if(sibling == NULL){ 
 		doubleBlack(parent);
 	}else{
-		if(sibling->color == RED){
+		if(sibling->color == RED){ 
 			swapColor(parent,sibling);
 			if(parent->left == curr){
 				rotate(parent,"right");
@@ -155,9 +156,10 @@ void doubleBlack(node *curr){
 				sibling->color = RED;
 				if(parent->color == BLACK){
 					doubleBlack(parent);
+					return;
 				}
-				parent->color = BLACK;
 			}
+			parent->color = BLACK;
 		}
 	}
 }
