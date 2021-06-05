@@ -1,8 +1,11 @@
 #include<stdio.h>
 #include<stdlib.h>
-#include<string.h>
+
 #define RED 0
 #define BLACK 1
+#define LEFT 2
+#define RIGHT 3
+
 
 struct node {
 	int key,color;
@@ -16,23 +19,24 @@ node *createNode(int key) {
 	toAdd->left = toAdd->right = toAdd->parent = NULL;
 	return toAdd;
 }
+
 void swapColor(node *a,node *b) {
 	int temp = a->color;
 	a->color = b->color;
 	b->color = temp;
 }
 
-void rotate(node *curr, const char *flag) {
+void rotate(node *curr, int flag) {
 	node *y,*z;
 	
-	if(!strcmp(flag,"left")) {
+	if(flag == LEFT) {
 		
 		y = curr->right;
 		z = y->left;
     	curr->right = y->left;
     	y->left = curr;
 
-	} else if(!strcmp(flag,"right")) {
+	} else {
 		
 		y = curr->left;
 		z = y->right;
@@ -53,32 +57,35 @@ void rotate(node *curr, const char *flag) {
 	y->parent = curr->parent;
 	curr->parent = y;
 }
+
 void fixViolation(node *curr) {
-	node *grandparent = NULL;
-	node *parent = NULL;
-	while ((curr->parent) && (curr->color != BLACK) && (curr->parent->color == RED)){ 
+	node *parent,*uncle ,*grandparent;
+	
+	while ((curr->parent) && (curr->color == RED) && (curr->parent->color == RED)){ 
+	
 		parent = curr->parent;
 		grandparent = parent->parent;
-		node *uncle = (parent == grandparent->right) ? grandparent->left : grandparent->right;
+		uncle = (parent == grandparent->right) ? grandparent->left : grandparent->right;
+		
 		if(uncle && uncle->color == RED) {
 			uncle->color = parent->color = BLACK;
 			grandparent->color = RED;
 			curr = grandparent;
 		} else {
-			if(grandparent->right == parent ) {
+			if( grandparent->right == parent ) {
 				if(parent->left == curr){
-					rotate(parent,"right");
+					rotate(parent,RIGHT);
 					curr = parent;
 					parent = curr->parent;
 				}
-				rotate(grandparent,"left");
-			} else if(grandparent->left == parent) {
+				rotate(grandparent,LEFT);
+			} else if( grandparent->left == parent ) {
 				if(parent->right == curr){
-					rotate(parent,"left");
+					rotate(parent,LEFT);
 					curr = parent;
 					parent = curr->parent;	
 				}
-				rotate(grandparent,"right");
+				rotate(grandparent, RIGHT);
 			}
 			swapColor(parent,grandparent);
 			curr = parent;
@@ -107,49 +114,44 @@ void insertion(int key) {
 	root = BSTinsert(toAdd,root);
 	fixViolation(toAdd);
 }
-void inorder(node *curr,int depth){
-	if(curr){
-	inorder(curr->left,depth+1);
-	printf("%d %d\n",curr->key,depth);
-	inorder(curr->right,depth+1);}
-}
+
 void doubleBlack(node *curr){
 	if(curr == root){ 
 		return;
 	}
 	
 	node *parent = curr->parent,*sibling = (curr->parent->left == curr) ? curr->parent->right : curr->parent->left; 
-	if(sibling == NULL){ 
+	if(!sibling){ 
 		doubleBlack(parent);
 	}else{
 		if(sibling->color == RED){ 
 			swapColor(parent,sibling);
-			if(parent->left == curr){
-				rotate(parent,"right");
+			if(parent->left == sibling){
+				rotate(parent,RIGHT);
 			}else{
-				rotate(parent,"left");
+				rotate(parent,LEFT);
 			}
 			doubleBlack(curr);
 		}else{
-			if((sibling->left && sibling->left->color==RED)){
+			if(sibling->left && sibling->left->color == RED){
 				if(parent->left == sibling){
 					sibling->left->color = sibling->color;
               		sibling->color = parent->color;
-					rotate(parent,"right");
+					rotate(parent,RIGHT);
 				}else{
 					sibling->left->color = parent->color;
-					rotate(sibling,"right");
-					rotate(parent,"left");
+					rotate(sibling,RIGHT);
+					rotate(parent,LEFT);
 				}
-			}else if((sibling->right && sibling->right->color==RED)){
+			}else if(sibling->right && sibling->right->color == RED){
 				if(parent->right == sibling){
 					sibling->right->color = sibling->color;
              		sibling->color = parent->color;
-					rotate(parent,"left");
+					rotate(parent,LEFT);
 				}else{
 					sibling->right->color = parent->color;
-					rotate(sibling,"left");
-					rotate(parent,"right");
+					rotate(sibling,LEFT);
+					rotate(parent,RIGHT);
 				}
 			}else{
 				
@@ -163,6 +165,21 @@ void doubleBlack(node *curr){
 		}
 	}
 }
+
+node *getSucc(node *curr){
+	while(curr->left){
+		curr = curr->left;
+	}
+	return curr;
+}
+
+node *getPred(node *curr){
+	while(curr->right){
+		curr = curr->right;
+	}
+	return curr;
+}
+
 void deletion(int key,node *curr){
 	if(!curr){
 		return;
@@ -178,7 +195,7 @@ void deletion(int key,node *curr){
 				doubleBlack(curr);	
 			}
 			if(curr == root){
-				root=NULL;
+				root = NULL;
 			}else if(curr->parent->left == curr){
 				curr->parent->left = NULL;
 			}else{
@@ -187,25 +204,25 @@ void deletion(int key,node *curr){
 			free(curr);
 			curr = NULL;
 		}else{
-			node *toDel;
+			node *toDel,*pos;
 			if(curr->right){
-				toDel = curr->right;
-				while(toDel && toDel->left){
-					toDel = toDel->left;
-				}
-				curr->key = toDel->key;
-				deletion(toDel->key,curr->right);
+				toDel = getSucc(pos = curr->right);
 			}else{
-				toDel = curr->left;
-				while(toDel && toDel->right){
-					toDel = toDel->right;
-				}
-				curr->key = toDel->key;
-				deletion(curr->key,curr->left);
+				toDel = getPred(pos = curr->left);
 			}
+			curr->key = toDel->key;
+			deletion(toDel->key,pos);
 		}
 	}
 }
+
+void inorder(node *curr,int depth){
+	if(curr){
+	inorder(curr->left,depth+1);
+	printf("%d %d\n",curr->key,depth);
+	inorder(curr->right,depth+1);}
+}
+
 int main() {
 
 	insertion(200);
