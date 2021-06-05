@@ -10,7 +10,7 @@
 struct node {
 	int key,color;
 	node *left,*right,*parent;
-}*root;
+};
 
 node *createNode(int key) {
 	node *toAdd = (node *)malloc(sizeof(node));
@@ -20,17 +20,17 @@ node *createNode(int key) {
 	return toAdd;
 }
 
-int isRed(node *curr){
-	return (curr && curr->color == RED) ? 1 : 0;
-}
-
 void swapColor(node *a,node *b) {
 	int temp = a->color;
 	a->color = b->color;
 	b->color = temp;
 }
 
-void rotate(node *curr, int flag) {
+int isRed(node *curr){
+	return (curr && curr->color == RED) ? 1 : 0;
+}
+
+void rotate(node *curr, int flag,node **root) {
 	node *y,*z;
 	
 	if(flag == LEFT) {
@@ -49,7 +49,7 @@ void rotate(node *curr, int flag) {
     	
 	}
 	if(!curr->parent){
-		root = y;
+		*root = y;
 	}else if(curr->parent->left==curr){
 		curr->parent->left = y;
 	}else{
@@ -62,7 +62,25 @@ void rotate(node *curr, int flag) {
 	curr->parent = y;
 }
 
-void fixViolation(node *curr) {
+node *find(int key,node *curr){
+	if(!curr){
+		return NULL;
+	}
+	
+	if(curr->left && curr->key > key){
+		
+		return find(key,curr->left);
+	}
+	
+	if(curr->right && curr->key < key){
+		return find(key,curr->right);
+	}
+	
+
+	return curr;
+}
+
+void fixViolation(node *curr,node **root) {
 	node *parent,*uncle ,*grandparent;
 	
 	while (isRed(curr) && isRed(curr->parent)){ 
@@ -77,68 +95,72 @@ void fixViolation(node *curr) {
 			curr = grandparent;
 			continue;
 		}
+		 
 		if( grandparent->right == parent ) {
 			if(parent->left == curr){
-				rotate(parent,RIGHT);
+				rotate(parent,RIGHT,root);
 				curr = parent;
 				parent = curr->parent;
 			}
-			rotate(grandparent,LEFT);
-		} else if( grandparent->left == parent ) {
+			rotate(grandparent,LEFT,root);
+		} else {
 			if(parent->right == curr){
-				rotate(parent,LEFT);
+				rotate(parent,LEFT,root);
 				curr = parent;
 				parent = curr->parent;	
 			}
-			rotate(grandparent, RIGHT);
+			rotate(grandparent, RIGHT,root);
 		}
 		swapColor(parent,grandparent);
 		curr = parent;
-		
 	}
-	root->color = BLACK;
-}
-node *BSTinsert(node *toAdd,node *curr) {
-	if(!curr) {
-		return toAdd;
-	}
-
-	if(curr->key > toAdd->key) {
-		curr->left = BSTinsert(toAdd,curr->left);
-		curr->left->parent = curr;
-	} else if(curr->key < toAdd->key) {
-		curr->right = BSTinsert(toAdd,curr->right);
-		curr->right->parent = curr;
-	}
-
-	return curr;
+	(*root)->color = BLACK;
 }
 
-void insertion(int key) {
+void insertion(int key,node **root) {
+	
+	if(!*root){
+		*root = createNode(key);
+		(*root)->color = BLACK;
+		return;
+	}
+	
+	node *parent = find(key,*root);
+	
+	if(key == parent->key){
+		return;
+	}
+	
 	node *toAdd = createNode(key);
-	root = BSTinsert(toAdd,root);
-	fixViolation(toAdd);
+	if(parent->key > key){
+		parent->left = toAdd;
+	}else{
+		parent->right = toAdd;
+	}
+	toAdd->parent = parent;
+	
+	fixViolation(toAdd,root);
 }
 
-void doubleBlack(node *curr){
-	if(curr == root){ 
+void doubleBlack(node *curr, node **root){
+	if(!curr->parent){ 
 		return;
 	}
 	
 	node *parent = curr->parent,*sibling = (curr->parent->left == curr) ? curr->parent->right : curr->parent->left; 
 	if(!sibling){ 
-		doubleBlack(parent);
+		doubleBlack(parent,root);
 		return;
 	}
 	
 	if(isRed(sibling)){ 
 		swapColor(parent,sibling);
 		if(parent->left == sibling){
-			rotate(parent,RIGHT);
+			rotate(parent,RIGHT,root);
 		}else{
-			rotate(parent,LEFT);
+			rotate(parent,LEFT,root);
 		}
-		doubleBlack(curr);
+		doubleBlack(curr,root);
 		return;
 	}
 	
@@ -146,33 +168,32 @@ void doubleBlack(node *curr){
 		if(parent->left == sibling){
 			sibling->left->color = sibling->color;
       		sibling->color = parent->color;
-			rotate(parent,RIGHT);
+			rotate(parent,RIGHT,root);
 		}else{
 			sibling->left->color = parent->color;
-			rotate(sibling,RIGHT);
-			rotate(parent,LEFT);
+			rotate(sibling,RIGHT,root);
+			rotate(parent,LEFT,root);
 		}
 	}else if(isRed(sibling->right)){
 		if(parent->right == sibling){
 			sibling->right->color = sibling->color;
      		sibling->color = parent->color;
-			rotate(parent,LEFT);
+			rotate(parent,LEFT,root);
 		}else{
 			sibling->right->color = parent->color;
-			rotate(sibling,LEFT);
-			rotate(parent,RIGHT);
+			rotate(sibling,LEFT,root);
+			rotate(parent,RIGHT,root);
 		}
 	}else{
 		
 		sibling->color = RED;
 		if(!isRed(parent)){
-			doubleBlack(parent);
+			doubleBlack(parent,root);
 			return;
 		}
 	}
 	parent->color = BLACK;
-
-
+	
 }
 
 node *getSucc(node *curr){
@@ -189,26 +210,20 @@ node *getPred(node *curr){
 	return curr;
 }
 
-void deletion(int key,node *curr){
-	if(!curr){
+void deletion(int key,node *start,node **root){
+	node *curr = find(key,start);
+
+	if(curr->key != key){
 		return;
 	}
-	
-	if(curr->key > key){
-		deletion(key,curr->left);
-		return;
-	}
-	if(curr->key < key){
-		deletion(key,curr->right);
-		return;
-	}
-	
+		
 	if(!curr->right && !curr->left){
 		if(!isRed(curr)){
-			doubleBlack(curr);	
+			doubleBlack(curr,root);	
 		}
-		if(curr == root){
-			root = NULL;
+		if(!curr->parent){
+			*root = NULL;
+			
 		}else if(curr->parent->left == curr){
 			curr->parent->left = NULL;
 		}else{
@@ -216,6 +231,7 @@ void deletion(int key,node *curr){
 		}
 		free(curr);
 		curr = NULL;
+	
 	}else{
 		node *toDel,*pos;
 		if(curr->right){
@@ -223,8 +239,9 @@ void deletion(int key,node *curr){
 		}else{
 			toDel = getPred(pos = curr->left);
 		}
+		
 		curr->key = toDel->key;
-		deletion(toDel->key,pos);
+		deletion(curr->key,pos,root);
 	}
 	
 }
@@ -237,38 +254,41 @@ void inorder(node *curr,int depth){
 }
 
 int main() {
-	insertion(200);
-	insertion(300);
-	insertion(400);
-	insertion(700);
-	insertion(500);
-	insertion(600);
-	insertion(800);
-	insertion(900);
-	insertion(1000);
-	insertion(1100);
-	insertion(1200);
-	insertion(2200);
-	insertion(3300);
-	insertion(1400);
-	insertion(1500);
-	insertion(1600);
+	
+	node *root = NULL;
+	
+	insertion(200,&root);
+	insertion(300,&root);
+	insertion(400,&root);
+	insertion(700,&root);
+	insertion(500,&root);
+	insertion(600,&root);
+	insertion(800,&root);
+	insertion(900,&root);
+	insertion(1000,&root);
+	insertion(1100,&root);
+	insertion(1200,&root);
+	insertion(2200,&root);
+	insertion(3300,&root);
+	insertion(1400,&root);
+	insertion(1500,&root);
+	insertion(1600,&root);
 	inorder(root,0);
-	deletion(200,root);
-	deletion(300,root);
-	deletion(400,root);
-	deletion(700,root);
-	deletion(500,root);
-	deletion(600,root);
-	deletion(800,root);
-	deletion(900,root);
-	deletion(1000,root);
-	deletion(1100,root);
-	deletion(1200,root);
-	deletion(2200,root);
-	deletion(3300,root);
-	deletion(1400,root);
-	deletion(1500,root);
-	deletion(1600,root);
+	deletion(200,root,&root);
+	deletion(300,root,&root);
+	deletion(400,root,&root);
+	deletion(700,root,&root);
+	deletion(500,root,&root);
+	deletion(600,root,&root);
+	deletion(800,root,&root);
+	deletion(900,root,&root);
+	deletion(1000,root,&root);
+	deletion(1100,root,&root);
+	deletion(1200,root,&root);
+	deletion(2200,root,&root);
+	deletion(3300,root,&root);
+	deletion(1400,root,&root);
+	deletion(1500,root,&root);
+	deletion(1600,root,&root);
 	inorder(root,0);
 }
