@@ -7,7 +7,7 @@
 struct Node {
 	int key[MAX + 2],ctr,leaf; // setiap node nanti nya akan memegang hingga tepat MAX - 1 key
  	Node *child[MAX+2]; 		// child yang dipegang hingga MAX
-} *root  = NULL; // initial root
+} *root = NULL; // initial root
 
 Node *createNode(int key, Node *child);
 int setKeyNode(int key, int *potKey, Node *node, Node **child);

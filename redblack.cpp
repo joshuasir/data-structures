@@ -71,7 +71,7 @@ void fixViolation(node *curr) {
 		grandparent = parent->parent;
 		uncle = (parent == grandparent->right) ? grandparent->left : grandparent->right;
 		
-		if(uncle && uncle->color == RED) {
+		if(isRed(uncle)) {
 			uncle->color = parent->color = BLACK;
 			grandparent->color = RED;
 			curr = grandparent;
@@ -133,35 +133,27 @@ void doubleBlack(node *curr){
 	
 	if(isRed(sibling)){ 
 		swapColor(parent,sibling);
-		if(parent->left == sibling){
-			rotate(parent,RIGHT);
-		}else{
-			rotate(parent,LEFT);
-		}
+		(parent->left == sibling) ? rotate(parent,RIGHT) : rotate(parent,LEFT);
 		doubleBlack(curr);
 		return;
 	}
 	
-	if(isRed(sibling->left)){
-		if(parent->left == sibling){
-			sibling->left->color = sibling->color;
-      		sibling->color = parent->color;
-			rotate(parent,RIGHT);
-		}else{
-			sibling->left->color = parent->color;
-			rotate(sibling,RIGHT);
-			rotate(parent,LEFT);
-		}
+	if(isRed(sibling->left) && parent->left == sibling){
+		sibling->left->color = sibling->color;
+      	sibling->color = parent->color;
+		rotate(parent,RIGHT);
+	}else if(isRed(sibling->right) && parent->right == sibling){
+		sibling->right->color = sibling->color;
+     	sibling->color = parent->color;
+		rotate(parent,LEFT);
+	}else if(isRed(sibling->left)){
+		sibling->left->color = parent->color;
+		rotate(sibling,RIGHT);
+		rotate(parent,LEFT);
 	}else if(isRed(sibling->right)){
-		if(parent->right == sibling){
-			sibling->right->color = sibling->color;
-     		sibling->color = parent->color;
-			rotate(parent,LEFT);
-		}else{
-			sibling->right->color = parent->color;
-			rotate(sibling,LEFT);
-			rotate(parent,RIGHT);
-		}
+		sibling->right->color = parent->color;
+		rotate(sibling,LEFT);
+		rotate(parent,RIGHT);
 	}else{
 		
 		sibling->color = RED;
@@ -171,8 +163,6 @@ void doubleBlack(node *curr){
 		}
 	}
 	parent->color = BLACK;
-
-
 }
 
 node *getSucc(node *curr){
@@ -218,15 +208,10 @@ void deletion(int key,node *curr){
 		curr = NULL;
 	}else{
 		node *toDel,*pos;
-		if(curr->right){
-			toDel = getSucc(pos = curr->right);
-		}else{
-			toDel = getPred(pos = curr->left);
-		}
+		toDel = (curr->right) ? getSucc(pos = curr->right) : getPred(pos = curr->left);
 		curr->key = toDel->key;
 		deletion(toDel->key,pos);
 	}
-	
 }
 
 void inorder(node *curr,int depth){
