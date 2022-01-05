@@ -1,2 +1,2 @@
 # DataStructure
-Handcoded Data Structures in C
+Handcoded Data Structures and Implementations in C
